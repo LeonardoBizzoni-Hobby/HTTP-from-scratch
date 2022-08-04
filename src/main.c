@@ -1,10 +1,8 @@
 #include <stdio.h>
-#include "tcp_server.h"
-#include "tcp_client.h"
+#include "http_server.h"
 
 int main(int argc, char *argv[]) {
-  /* tcp_start_server(); */
-  tcp_run_client();
+  http_start_server();
   
   return 0;
 }
