@@ -2,7 +2,9 @@
 #include "http_server.h"
 
 int main(int argc, char *argv[]) {
-  http_start_server();
+  /* Read config file */
+  Server srv = http_create_server();
+  http_start_server(srv);
   
   return 0;
 }

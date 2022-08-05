@@ -1,4 +1,5 @@
 #include "http_server.h"
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,9 +16,7 @@ Server http_create_server() {
   return (Server){8000, IP, "/home/leo/Dev/mockServerRoot"};
 }
 
-void http_start_server() {
-  Server srv = http_create_server();
-
+void http_start_server(const Server srv) {
   /* Socket creation */
   int server_socket, client_socket;
   struct sockaddr_in server_addr, client_addr;
@@ -44,32 +43,33 @@ void http_start_server() {
 
   /* Wait for connetion */
   while (1) {
-  char data[512], response[2048] = "";
+    char data[512];
 
-  printf("\nListening at: %s:%i\n", inet_ntoa(server_addr.sin_addr), srv.port);
-  listen(server_socket, 5);
+    printf("\nListening at: %s:%i\n", inet_ntoa(server_addr.sin_addr),
+           srv.port);
+    listen(server_socket, 5);
 
-  /* Accept client connection */
-  client_socket =
-      accept(server_socket, (struct sockaddr *)&client_addr, &addr_len);
-  printf("Got a connection with: %s\n", inet_ntoa(client_addr.sin_addr));
+    /* Accept client connection */
+    client_socket =
+        accept(server_socket, (struct sockaddr *)&client_addr, &addr_len);
+    printf("Got a connection with: %s\n", inet_ntoa(client_addr.sin_addr));
 
-  /* Get data from client socket */
-  recv(client_socket, &data, sizeof(data), 0);
-  /* printf("Request: \n%s\n\n", data); */
+    /* Get data from client socket */
+    recv(client_socket, &data, sizeof(data), 0);
+    printf("Request: %s\n", data);
 
-  /* Handle request and send back data */
-  handle_request(srv, &data, &response);
-  send(client_socket, response, sizeof(response), 0);
-
-  close(client_socket);
+    /* Handle request and send back data */
+    handle_request(srv, &data, client_socket);
+    close(client_socket);
   }
 
   close(server_socket);
 }
 
 /* Data should be used to choose the HTML document requested by the user */
-void handle_request(const Server srv, const void *data, void *response) {
+void handle_request(const Server srv, const void *data,
+                    const int client_socket) {
+  /* Analyzing request */
   char request_path[100];
 
   char *str = (char *)data;
@@ -82,27 +82,38 @@ void handle_request(const Server srv, const void *data, void *response) {
   } else {
     strcat(request_path, request_file);
   }
-  printf("Method: %s\nDoc: %s\n", request_type, request_path);
+
+  /* Processing response */
+  char *response;
 
   if (access(request_path, F_OK) == 0) {
     if (strstr(request_type, "GET")) {
-      FILE *ptr = fopen(request_path, "r");
-      
+      /* HTTP header */
       char *http_header = "HTTP/1.1 200 OK\r\n\n";
-      char http_body[2048] = "";
-      char c;
-      int index = 0;
-
-      while ((c = fgetc(ptr)) != EOF) {
-	http_body[index] = c;
-	index++;
-      }
-
-      fclose(ptr);
+      size_t size = strlen(http_header);
+      response = malloc(size);
 
       strcpy(response, http_header);
-      strcat(response, http_body);
+
+      /* HTTP body */
+      FILE *ptr = fopen(request_path, "r");
+
+      /* Read file contents */
+      char c;
+      int len = strlen(response);
+      while ((c = fgetc(ptr)) != EOF) {
+	if (len >= size) {
+	  ++size;
+	  response = realloc(response, size);
+	}
+	response[len++] = c;
+      }
+      response = realloc(response, size+1);
+      response[len] = '\0';
+
+      fclose(ptr);
     }
+
   } else {
     char *http_header = "HTTP/1.1 404 ERR\r\n\n";
     char *http_body = "<html>\
@@ -117,4 +128,8 @@ void handle_request(const Server srv, const void *data, void *response) {
     strcpy(response, http_header);
     strcat(response, http_body);
   }
+
+  send(client_socket, response, strlen(response), 0);
+
+  free(response);
 }

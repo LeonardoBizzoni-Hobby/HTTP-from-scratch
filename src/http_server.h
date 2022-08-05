@@ -16,6 +16,6 @@ typedef struct {
   char *root;
 } Server;
 
-void http_start_server();
-void handle_request(const Server, const void *, void *);
-
+Server http_create_server(void);
+void http_start_server(const Server);
+void handle_request(const Server, const void *, const int);
