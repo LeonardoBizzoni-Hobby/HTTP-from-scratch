@@ -1,4 +1,7 @@
 #include "http_server.h"
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
 
 Server http_create_server() {
   char host[256];
@@ -34,20 +37,23 @@ void http_start_server(const Server srv) {
   }
 
   /* Bind socket to port */
-  if (bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
+  if (bind(server_socket, (struct sockaddr *)&server_addr,
+           sizeof(server_addr)) == -1) {
     perror("[ERROR] could not bind PORT defined in \"src/tcp_server.h\".");
     exit(EXIT_FAILURE);
   }
 
   /* Wait for connetion */
   while (1) {
-    char data[512];
+    char data[1024];
 
-    printf("\nListening at: %s:%i\n", inet_ntoa(server_addr.sin_addr), srv.port);
+    printf("\nListening at: %s:%i\n", inet_ntoa(server_addr.sin_addr),
+           srv.port);
     listen(server_socket, 5);
 
     /* Accept client connection */
-    client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &addr_len);
+    client_socket =
+        accept(server_socket, (struct sockaddr *)&client_addr, &addr_len);
     printf("Got a connection with: %s\n", inet_ntoa(client_addr.sin_addr));
 
     /* Get data from client socket */
@@ -63,7 +69,8 @@ void http_start_server(const Server srv) {
 }
 
 /* Data should be used to choose the HTML document requested by the user */
-void handle_request(const Server srv, const void *data, const int client_socket) {
+void handle_request(const Server srv, const void *data,
+                    const int client_socket) {
   /* Analyzing request */
   char request_path[100];
 
@@ -79,8 +86,6 @@ void handle_request(const Server srv, const void *data, const int client_socket)
   }
 
   /* Processing response */
-  char *response;
-
   if (access(request_path, F_OK) == 0) {
     if (strstr(request_type, "GET")) {
       /* HTTP header */
@@ -88,30 +93,41 @@ void handle_request(const Server srv, const void *data, const int client_socket)
       send(client_socket, http_header, strlen(http_header), 0);
 
       /* HTTP body */
-      int file;
-      struct stat file_stat;
+      /* this if will probably have to go */
+      if (strstr(request_file, ".png\0") || strstr(request_file, ".jpg\0") || strstr(request_file, ".webp\0") || strstr(request_file, ".jpeg\0") || strstr(request_file, ".mp4\0")) {
+        int file;
+        struct stat file_stat;
 
-      if ((file = open(request_path, O_RDONLY)) < 0) {
-        perror("[ERROR] can't open file\n");
-        exit(EXIT_FAILURE);
+        if ((file = open(request_path, O_RDONLY)) < 0) {
+          perror("[ERROR] can't open file\n");
+          exit(EXIT_FAILURE);
+        }
+
+        fstat(file, &file_stat);
+        sendfile(client_socket, file, 0, file_stat.st_size);
+        close(file);
+      } else {
+        FILE *ptr = fopen(request_path, "r");
+
+        /* Read file contents */
+        char c;
+        size_t size = 0, index = 0;
+	char *response = malloc(size+1);
+
+        while ((c = fgetc(ptr)) != EOF) {
+          if (index >= size) {
+            ++size;
+            response = realloc(response, size);
+          }
+          response[index++] = c;
+        }
+        response = realloc(response, size + 1);
+        response[index] = '\0';
+
+        fclose(ptr);
+	send(client_socket, response, strlen(response), 0);
+	free(response);
       }
-
-      fstat(file, &file_stat);
-      sendfile(client_socket, file, 0, file_stat.st_size);
-      close(file);
     }
-  } else {
-    char *http_header = "HTTP/1.1 404 ERR\r\n\n";
-    char *http_body = "<html>\
-<head>\
-<title>File not found!</title>\
-</head>\
-<body>\
-<h1>Couldn't find file!</h1>\
-</body>\
-</html>";
-
-    strcpy(response, http_header);
-    strcat(response, http_body);
   }
 }
