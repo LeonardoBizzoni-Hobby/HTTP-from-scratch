@@ -1,4 +1,6 @@
 #include "http_server.h"
+#include <arpa/inet.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -15,7 +17,7 @@ Server http_create_server() {
   /* Convert into IP string */
   char *IP = inet_ntoa(*((struct in_addr *)host_entry->h_addr_list[0]));
 
-  return (Server){8000, IP, "/home/leo/Dev/mockServerRoot"};
+  return (Server){ 8000, IP, "root", "/index.html", "", false };
 }
 
 void http_start_server(const Server srv) {
@@ -47,18 +49,24 @@ void http_start_server(const Server srv) {
   while (1) {
     char data[1024];
 
-    printf("\nListening at: %s:%i\n", inet_ntoa(server_addr.sin_addr),
-           srv.port);
+    if (srv.verbose) {
+      printf("[WAIT] listening on %s:%i\n", inet_ntoa(server_addr.sin_addr), srv.port);
+    }
     listen(server_socket, 5);
 
     /* Accept client connection */
     client_socket =
         accept(server_socket, (struct sockaddr *)&client_addr, &addr_len);
-    printf("Got a connection with: %s\n", inet_ntoa(client_addr.sin_addr));
+
+    if (srv.verbose) {
+      printf("[CONN] connection established with %s:%d\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
+    }
 
     /* Get data from client socket */
     recv(client_socket, &data, sizeof(data), 0);
-    printf("Request: %s\n", data);
+    if (srv.verbose) {
+      printf("[%s:%d] REQUEST: %s\n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port, data);
+    }
 
     /* Handle request and send back data */
     handle_request(srv, &data, client_socket);
@@ -80,7 +88,7 @@ void handle_request(const Server srv, const void *data,
 
   strcpy(request_path, srv.root);
   if (strcmp(request_file, "/") == 0) {
-    strcat(request_path, "/index.html");
+    strcat(request_path, srv.index_name);
   } else {
     strcat(request_path, request_file);
   }
@@ -99,7 +107,7 @@ void handle_request(const Server srv, const void *data,
         struct stat file_stat;
 
         if ((file = open(request_path, O_RDONLY)) < 0) {
-          perror("[ERROR] can't open file\n");
+          perror("[FILE_ERROR] can't open requested file\n");
           exit(EXIT_FAILURE);
         }
 

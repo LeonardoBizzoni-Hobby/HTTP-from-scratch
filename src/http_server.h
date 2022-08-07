@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <unistd.h>
+#include <stdbool.h>
+
+#include <getopt.h>
 
 #include <string.h>
 
@@ -19,6 +22,9 @@ typedef struct {
   int port;
   char *addr;
   char *root;
+  char *index_name;
+  char *out_file;
+  bool verbose;
 } Server;
 
 Server http_create_server(void);
