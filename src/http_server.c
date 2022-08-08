@@ -1,12 +1,13 @@
 #include "http_server.h"
+#include <stdio.h>
 
 static char g_log[100];
 
 #define SaveLog()                                                              \
   {                                                                            \
-    if (strcmp(srv->out_file, "") != 0) {                                       \
+    if (strcmp(srv->out_file, "") != 0) {                                      \
       FILE *ptr;                                                               \
-      ptr = fopen(srv->out_file, "a");                                          \
+      ptr = fopen(srv->out_file, "a");                                         \
                                                                                \
       if (ptr != NULL) {                                                       \
         fputs(g_log, ptr);                                                     \
@@ -79,6 +80,8 @@ void *http_start_server(const Server *srv) {
         printf("%s", g_log);
       }
       SaveLog();
+    } else {
+      printf("Listening on %s:%d\n", inet_ntoa(server_addr.sin_addr), srv->port);
     }
 
     listen(server_socket, 20);
@@ -140,6 +143,8 @@ void handle_request(const Server *srv, const void *data, const int client_socket
   char *request_type = strsep(&str, " ");
   char *request_file = strsep(&str, " ");
 
+  printf("\t%s %s", request_type, request_file);
+
   strcpy(request_path, srv->root);
   if (strcmp(request_file, "/") == 0) {
     strcat(request_path, srv->index_name);
@@ -150,6 +155,7 @@ void handle_request(const Server *srv, const void *data, const int client_socket
   /* Processing response */
   if (access(request_path, F_OK) == 0) {
     if (strstr(request_type, "GET")) {
+      printf(ANSI_COLOR_GREEN " 200 OK" ANSI_COLOR_RESET "\n");
       /* HTTP header */
       char *http_header = "HTTP/1.1 200 OK\r\n\n";
       send(client_socket, http_header, strlen(http_header), 0);
@@ -196,5 +202,7 @@ void handle_request(const Server *srv, const void *data, const int client_socket
         free(response);
       }
     }
+  } else {
+    printf(ANSI_COLOR_RED " 404 Not Found" ANSI_COLOR_RESET "\n");
   }
 }
