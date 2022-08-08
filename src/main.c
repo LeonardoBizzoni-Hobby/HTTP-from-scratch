@@ -1,4 +1,5 @@
 #include "http_server.h"
+#include <pthread.h>
 
 int main(int argc, char *argv[]) {
   /* CLI options */
@@ -44,7 +45,9 @@ int main(int argc, char *argv[]) {
   }
 
   /* Start http */
-  http_start_server(srv);
+  pthread_t thread_id;
+  pthread_create(&thread_id, NULL, http_start_server(&srv), NULL);
+  /* http_start_server(srv); */
   
   return 0;
 }

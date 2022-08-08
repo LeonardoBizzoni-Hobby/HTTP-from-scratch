@@ -4,9 +4,9 @@ static char g_log[100];
 
 #define SaveLog()                                                              \
   {                                                                            \
-    if (strcmp(srv.out_file, "") != 0) {                                       \
+    if (strcmp(srv->out_file, "") != 0) {                                       \
       FILE *ptr;                                                               \
-      ptr = fopen(srv.out_file, "a");                                          \
+      ptr = fopen(srv->out_file, "a");                                          \
                                                                                \
       if (ptr != NULL) {                                                       \
         fputs(g_log, ptr);                                                     \
@@ -30,7 +30,7 @@ Server http_create_server() {
   return (Server){8000, IP, "root", "/index.html", "", false};
 }
 
-void http_start_server(const Server srv) {
+void *http_start_server(const Server *srv) {
   /* Socket creation */
   int server_socket, client_socket;
   struct sockaddr_in server_addr, client_addr;
@@ -44,8 +44,8 @@ void http_start_server(const Server srv) {
   }
 
   server_addr.sin_family = AF_INET;
-  server_addr.sin_port = htons(srv.port);
-  if (inet_pton(AF_INET, srv.addr, &server_addr.sin_addr) <= 0) {
+  server_addr.sin_port = htons(srv->port);
+  if (inet_pton(AF_INET, srv->addr, &server_addr.sin_addr) <= 0) {
     strcpy(g_log, "[ERROR] invalid address.\n");
     perror(g_log);
     SaveLog();
@@ -67,15 +67,15 @@ void http_start_server(const Server srv) {
     char data[1024];
     char tmp_buf[7];
 
-    if (srv.verbose || strcmp(srv.out_file, "") != 0) {
+    if (srv->verbose || strcmp(srv->out_file, "") != 0) {
       strcpy(g_log, "[WAIT] listening on ");
       strcat(g_log, inet_ntoa(server_addr.sin_addr));
 
-      snprintf(tmp_buf, sizeof(tmp_buf), ":%d", srv.port);
+      snprintf(tmp_buf, sizeof(tmp_buf), ":%d", srv->port);
       strcat(g_log, tmp_buf);
       strcat(g_log, "\n");
 
-      if (srv.verbose) {
+      if (srv->verbose) {
         printf("%s", g_log);
       }
       SaveLog();
@@ -86,7 +86,7 @@ void http_start_server(const Server srv) {
     /* Accept client connection */
     client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &addr_len);
 
-    if (srv.verbose || strcmp(srv.out_file, "") != 0) {
+    if (srv->verbose || strcmp(srv->out_file, "") != 0) {
       strcpy(g_log, "[CONN] connection established with ");
       strcat(g_log, inet_ntoa(client_addr.sin_addr));
 
@@ -94,7 +94,7 @@ void http_start_server(const Server srv) {
       strcat(g_log, tmp_buf);
       strcat(g_log, "\n");
 
-      if (srv.verbose) {
+      if (srv->verbose) {
         printf("%s", g_log);
       }
       SaveLog();
@@ -102,7 +102,7 @@ void http_start_server(const Server srv) {
 
     /* Get data from client socket */
     recv(client_socket, &data, sizeof(data), 0);
-    if (srv.verbose || strcmp(srv.out_file, "") != 0) {
+    if (srv->verbose || strcmp(srv->out_file, "") != 0) {
       strcpy(g_log, "[");
       strcat(g_log, inet_ntoa(client_addr.sin_addr));
       strcat(g_log, tmp_buf);
@@ -110,7 +110,7 @@ void http_start_server(const Server srv) {
       strcat(g_log, data);
       strcat(g_log, "\n");
 
-      if (srv.verbose) {
+      if (srv->verbose) {
         printf("%s", data);
       }
       SaveLog();
@@ -124,7 +124,7 @@ void http_start_server(const Server srv) {
   close(server_socket);
 }
 
-void handle_request(const Server srv, const void *data, const int client_socket) {
+void handle_request(const Server *srv, const void *data, const int client_socket) {
   /* Analyzing request */
   char request_path[100];
 
@@ -140,9 +140,9 @@ void handle_request(const Server srv, const void *data, const int client_socket)
   char *request_type = strsep(&str, " ");
   char *request_file = strsep(&str, " ");
 
-  strcpy(request_path, srv.root);
+  strcpy(request_path, srv->root);
   if (strcmp(request_file, "/") == 0) {
-    strcat(request_path, srv.index_name);
+    strcat(request_path, srv->index_name);
   } else {
     strcat(request_path, request_file);
   }
@@ -166,10 +166,11 @@ void handle_request(const Server srv, const void *data, const int client_socket)
           strcpy(g_log, "[FILE_ERROR] can't open requested file\n");
           perror(g_log);
           SaveLog();
-          exit(EXIT_FAILURE);
+	  return;
         }
 
         fstat(file, &file_stat);
+	signal(SIGPIPE,SIG_IGN); //ignoring the broken pipe signal
         sendfile(client_socket, file, 0, file_stat.st_size);
         close(file);
       } else {

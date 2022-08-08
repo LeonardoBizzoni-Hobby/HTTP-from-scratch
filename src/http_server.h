@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <signal.h>
+#include <pthread.h>
 
 #include <getopt.h>
 
@@ -29,5 +31,5 @@ typedef struct {
 
 Server http_create_server(void);
 
-void http_start_server(const Server);
-void handle_request(const Server, const void *, const int);
+void *http_start_server(const Server *);
+void handle_request(const Server *, const void *, const int);
