@@ -1,7 +1,4 @@
 #include "http_server.h"
-#include <bits/getopt_core.h>
-#include <bits/getopt_ext.h>
-#include <stdio.h>
 
 int main(int argc, char *argv[]) {
   /* CLI options */
