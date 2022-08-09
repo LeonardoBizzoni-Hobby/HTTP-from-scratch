@@ -1,5 +1,4 @@
 #include "http_server.h"
-#include <stdio.h>
 
 static char g_log[100];
 
@@ -120,15 +119,19 @@ void *http_start_server(const Server *srv) {
     }
 
     /* Handle request and send back data */
-    handle_request(srv, &data, client_socket);
+    Request req = parse_request(srv, &data, client_socket);
+
+    if (req.valid) {
+      process_response(&req, client_socket, srv);
+    }
+
     close(client_socket);
   }
 
   close(server_socket);
 }
 
-void handle_request(const Server *srv, const void *data, const int client_socket) {
-  /* Analyzing request */
+Request parse_request(const Server *srv, const void *data, const int client_socket) {
   char request_path[100];
 
   char *str = (char *)data;
@@ -137,13 +140,14 @@ void handle_request(const Server *srv, const void *data, const int client_socket
     strcpy(g_log, "[REQ_ERROR] request not properly formatted\n");
     perror(g_log);
     SaveLog();
-    return;
+    return (Request){false};
   }
 
   char *request_type = strsep(&str, " ");
-  char *request_file = strsep(&str, " ");
+  char *request_args = strsep(&str, " ");
+  char *request_file = strsep(&request_args, "?");
 
-  printf("\t%s %s", request_type, request_file);
+  printf("\t%s %s?%s", request_type, request_file, request_args);
 
   strcpy(request_path, srv->root);
   if (strcmp(request_file, "/") == 0) {
@@ -152,57 +156,37 @@ void handle_request(const Server *srv, const void *data, const int client_socket
     strcat(request_path, request_file);
   }
 
-  /* Processing response */
-  if (access(request_path, F_OK) == 0) {
-    if (strstr(request_type, "GET")) {
+  return (Request) {true, request_type, request_path, request_args};
+}
+
+void process_response(const Request *req, const int client_socket, const Server *srv) {
+  if (access(req->path, F_OK) == 0) {
+    if (strstr(req->method, "GET")) {
       printf(ANSI_COLOR_GREEN " 200 OK" ANSI_COLOR_RESET "\n");
       /* HTTP header */
       char *http_header = "HTTP/1.1 200 OK\r\n\n";
       send(client_socket, http_header, strlen(http_header), 0);
 
       /* HTTP body */
-      /* this if will probably have to go */
-      if (strstr(request_file, ".png\0") || strstr(request_file, ".jpg\0") ||
-          strstr(request_file, ".webp\0") || strstr(request_file, ".jpeg\0") ||
-          strstr(request_file, ".mp4\0")) {
-        int file;
-        struct stat file_stat;
+      int file;
+      struct stat file_stat;
 
-        if ((file = open(request_path, O_RDONLY)) < 0) {
-          strcpy(g_log, "[FILE_ERROR] can't open requested file\n");
-          perror(g_log);
-          SaveLog();
-	  return;
-        }
-
-        fstat(file, &file_stat);
-	signal(SIGPIPE,SIG_IGN); //ignoring the broken pipe signal
-        sendfile(client_socket, file, 0, file_stat.st_size);
-        close(file);
-      } else {
-        FILE *ptr = fopen(request_path, "r");
-
-        /* Read file contents */
-        char c;
-        size_t size = 0, index = 0;
-        char *response = malloc(size + 1);
-
-        while ((c = fgetc(ptr)) != EOF) {
-          if (index >= size) {
-            ++size;
-            response = realloc(response, size);
-          }
-          response[index++] = c;
-        }
-        response = realloc(response, size + 1);
-        response[index] = '\0';
-
-        fclose(ptr);
-        send(client_socket, response, strlen(response), 0);
-        free(response);
+      if ((file = open(req->path, O_RDONLY)) < 0) {
+        strcpy(g_log, "[FILE_ERROR] can't open requested file\n");
+        perror(g_log);
+        SaveLog();
+        return;
       }
+
+      fstat(file, &file_stat);
+      signal(SIGPIPE, SIG_IGN); // ignoring the broken pipe signal
+      sendfile(client_socket, file, 0, file_stat.st_size);
+      close(file);
     }
   } else {
     printf(ANSI_COLOR_RED " 404 Not Found" ANSI_COLOR_RESET "\n");
+
+    char *http_header = "HTTP/1.1 404 ERR\r\n\n";
+    send(client_socket, http_header, strlen(http_header), 0);
   }
 }
