@@ -16,10 +16,10 @@ Open a terminal window and run the following commands.
   cd HTTP-from-scratch
 #+END_SRC
 
-You may also want to add the [[./][HTTP-from-scratch/]] directory to your PATH variable.
+You may also want to add the [[https://github.com/LeonardoBizzoni-Hobby/HTTP-from-scratch][HTTP-from-scratch/]] directory to your PATH variable.
 
 * How to use
-By default simply running scratchHTTP will try to open a connection using your machine IPv4 address on port 8000 and will look for files to serve under the [[./root/][HTTP-from-scratch/root/]] directory.
+By default simply running scratchHTTP will try to open a connection using your machine IPv4 address on port 8000 and will look for files to serve under the [[https://github.com/LeonardoBizzoni-Hobby/HTTP-from-scratch/tree/master/root][HTTP-from-scratch/root/]] directory.
 #+BEGIN_SRC bash
   scratchHTTP
 #+END_SRC
