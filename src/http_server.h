@@ -35,10 +35,11 @@ typedef struct {
   char *method;
   char *path;
   char *args;
+  char *body;
 } Request;
 
 Server http_create_server(void);
 
 void *http_start_server(const Server *);
 Request parse_request(const Server *, const void *, const int);
-void process_response(const Request *, const int, const Server *);
+void process_response(Request *, const int, const Server *);

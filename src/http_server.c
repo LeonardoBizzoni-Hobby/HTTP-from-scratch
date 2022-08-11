@@ -147,8 +147,6 @@ Request parse_request(const Server *srv, const void *data, const int client_sock
   char *request_args = strsep(&str, " ");
   char *request_file = strsep(&request_args, "?");
 
-  printf("\t%s %s?%s", request_type, request_file, request_args);
-
   strcpy(request_path, srv->root);
   if (strcmp(request_file, "/") == 0) {
     strcat(request_path, srv->index_name);
@@ -156,33 +154,47 @@ Request parse_request(const Server *srv, const void *data, const int client_sock
     strcat(request_path, request_file);
   }
 
-  return (Request) {true, request_type, request_path, request_args};
+  return (Request) {true, request_type, request_path, request_args, str};
 }
 
-void process_response(const Request *req, const int client_socket, const Server *srv) {
+void process_response(Request *req, const int client_socket, const Server *srv) {
   if (access(req->path, F_OK) == 0) {
+    /* HTTP header */
+    char *http_header = "HTTP/1.1 200 OK\r\n\n";
+    send(client_socket, http_header, strlen(http_header), 0);
+
+    signal(SIGPIPE, SIG_IGN); // ignoring the broken pipe signal
+
     if (strstr(req->method, "GET")) {
-      printf(ANSI_COLOR_GREEN " 200 OK" ANSI_COLOR_RESET "\n");
-      /* HTTP header */
-      char *http_header = "HTTP/1.1 200 OK\r\n\n";
-      send(client_socket, http_header, strlen(http_header), 0);
+      printf("\t%s %s?%s", req->method, req->path, req->args);
 
-      /* HTTP body */
-      int file;
-      struct stat file_stat;
+    } else if (strstr(req->method, "POST")) {
+      req->args = malloc(100);
 
-      if ((file = open(req->path, O_RDONLY)) < 0) {
-        strcpy(g_log, "[FILE_ERROR] can't open requested file\n");
-        perror(g_log);
-        SaveLog();
-        return;
-      }
+      do {
+	req->args = "";
+	req->args = strsep(&(req->body), "\n");
+      }while (strstr(req->args, "&") == NULL);
 
-      fstat(file, &file_stat);
-      signal(SIGPIPE, SIG_IGN); // ignoring the broken pipe signal
-      sendfile(client_socket, file, 0, file_stat.st_size);
-      close(file);
+      printf("\t%s %s\t%s", req->method, req->path, req->args);
     }
+
+    /* HTTP body */
+    int file;
+    struct stat file_stat;
+
+    if ((file = open(req->path, O_RDONLY)) < 0) {
+      strcpy(g_log, "[FILE_ERROR] can't open requested file\n");
+      perror(g_log);
+      SaveLog();
+      return;
+    }
+
+    fstat(file, &file_stat);
+    sendfile(client_socket, file, 0, file_stat.st_size);
+    close(file);
+
+    printf(ANSI_COLOR_GREEN " 200 OK" ANSI_COLOR_RESET "\n");
   } else {
     printf(ANSI_COLOR_RED " 404 Not Found" ANSI_COLOR_RESET "\n");
 
