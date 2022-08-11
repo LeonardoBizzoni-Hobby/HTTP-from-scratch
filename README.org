@@ -14,6 +14,7 @@ Open a terminal window and run the following commands.
 #+BEGIN_SRC bash
   git clone https://github.com/LeonardoBizzoni-Hobby/HTTP-from-scratch
   cd HTTP-from-scratch
+  make all
 #+END_SRC
 
 You may also want to add the [[https://github.com/LeonardoBizzoni-Hobby/HTTP-from-scratch][HTTP-from-scratch/]] directory to your PATH variable.
