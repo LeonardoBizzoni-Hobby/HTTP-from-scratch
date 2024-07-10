@@ -27,13 +27,9 @@ HTTPServer http_create_server(string *server_addr, u16 server_port,
   return srv;
 }
 
-void *prova(Socket client) {
+void prova(Socket client) {
   sleep(1);
   printf("Hello client!\n");
-
-  shutdown(client);
-  socket_close(client);
-  return 0;
 }
 
 void http_start_server(HTTPServer srv) {

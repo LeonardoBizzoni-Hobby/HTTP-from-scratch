@@ -1,7 +1,7 @@
 #include "./socket.h"
 #include "core/string.h"
-#include "pthread.h"
 
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <syscall.h>
@@ -64,7 +64,28 @@ ConnectionStatus listen(Socket socket, u8 backlog) {
   return CONNECTION_OK;
 }
 
-void accept(const Socket *server, void *(*handler)(Socket)) {
+struct HandlerData {
+  void (*fn)(Socket);
+  Socket client;
+};
+
+void *handler_wrapper(void *handler_data) {
+  struct HandlerData *data = (struct HandlerData *)handler_data;
+
+  data->fn(data->client);
+
+  printf("Handled request from %s:%d\n",
+         addr2str(data->client.addr.address).literal,
+         net2host(data->client.addr.port));
+
+  shutdown(data->client);
+  socket_close(data->client);
+
+  free(data);
+  return 0;
+}
+
+void accept(const Socket *server, void (*handler)(Socket)) {
   if (server->fd <= 0) {
     fprintf(stderr, "Server fd is invalid\n");
     return;
@@ -80,7 +101,13 @@ void accept(const Socket *server, void *(*handler)(Socket)) {
   }
 
   Socket client = {.fd = client_fd, .protocol = server->protocol, .addr = client_addr};
-  handler(client);
+
+  struct HandlerData *data = malloc(sizeof(struct HandlerData));
+  data->fn = handler;
+  data->client = client;
+
+  pthread_t t;
+  pthread_create(&t, 0, handler_wrapper, (void *)data);
 }
 
 void *recv(Socket client, usize count, i32 flags) {
@@ -93,22 +120,28 @@ void *recv(Socket client, usize count, i32 flags) {
 
 void send(Socket client, void *msg, usize size, i32 flags) {
   if (syscall(SYS_sendto, client.fd, msg, size, flags, 0, 0) < 0) {
-    /* TODO: implement printing! */
-    /* logf(mkstring("[send] failure.\n")); */
+    printf("\tFailed to send data to socket %s:%d\n",
+           addr2str(client.addr.address).literal, net2host(client.addr.port));
   }
 }
 
-void shutdown(Socket sock) {
-  if (syscall(SYS_shutdown, sock.fd, 1) < 0) {
-    /* TODO: implement printing! */
-    /* logf(mkstring("[send] failure.\n")); */
+void shutdown(Socket client) {
+  if (syscall(SYS_shutdown, client.fd, 1) < 0) {
+    printf("\tFailed to shutdown clientet %s:%d\n",
+           addr2str(client.addr.address).literal, net2host(client.addr.port));
+  } else {
+    printf("\tSocket %s:%d has been shutdown\n",
+           addr2str(client.addr.address).literal, net2host(client.addr.port));
   }
 }
 
-void socket_close(Socket sock) {
-  if (syscall(SYS_close, sock.fd) < 0) {
-    /* TODO: implement printing! */
-    /* logf(mkstring("[send] failure.\n")); */
+void socket_close(Socket client) {
+  if (syscall(SYS_close, client.fd) < 0) {
+    printf("\tFailed to close client %s:%d\n",
+           addr2str(client.addr.address).literal, net2host(client.addr.port));
+  } else {
+    printf("\tSocket %s:%d has been closed\n",
+           addr2str(client.addr.address).literal, net2host(client.addr.port));
   }
 }
 
@@ -118,7 +151,8 @@ u16 net2host(u16 port) { return (u16)(port << 8) | (port >> 8); }
 
 string addr2str(u32 addr) {
   char *parts = malloc(sizeof(char) * (4 * 3 + 3 + 1));
-  sprintf(parts, "%d.%d.%d.%d", (u8)addr, (u8)(addr >> 8), (u8)(addr >> 16), (u8)(addr >> 24));
+  sprintf(parts, "%d.%d.%d.%d", (u8)addr, (u8)(addr >> 8), (u8)(addr >> 16),
+          (u8)(addr >> 24));
 
   return mkstring(parts);
 }

@@ -33,7 +33,7 @@ u32 mkInet4Addr(string *address);
 Socket mkIPv4Socket(string *addr, u16 port, communication_protocol protocol);
 
 ConnectionStatus listen(Socket socket, u8 backlog);
-void accept(const Socket *server, void *(*handler)(Socket client));
+void accept(const Socket *server, void (*handler)(Socket client_socket));
 
 void *recv(Socket client, usize count, i32 flags);
 void send(Socket client, void *msg, usize size, i32 flags);
