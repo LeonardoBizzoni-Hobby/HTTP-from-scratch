@@ -1,0 +1,22 @@
+BasedOnStyle: Google
+IndentWidth: 2
+UseTab: Always
+NamespaceIndentation: All
+ColumnLimit: 100
+BreakBeforeBraces: Custom
+AccessModifierOffset: -2
+BraceWrapping:
+  AfterNamespace: false
+  AfterClass: false
+  AfterControlStatement: false
+  AfterFunction: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+AllowShortLoopsOnASingleLine: true
+PenaltyBreakBeforeFirstCallParameter: 1000
+PenaltyBreakComment: 300
+PenaltyBreakString: 1000
+PenaltyBreakTemplateDeclaration: 1000
+PenaltyExcessCharacter: 1000
+PenaltyReturnTypeOnItsOwnLine: 1000
