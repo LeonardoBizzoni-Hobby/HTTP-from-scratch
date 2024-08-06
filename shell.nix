@@ -4,6 +4,7 @@ pkgs.mkShell {
   nativeBuildInputs = with pkgs; [
     man-pages
 
+    valgrind
     gnumake
     cmake
     clang-tools

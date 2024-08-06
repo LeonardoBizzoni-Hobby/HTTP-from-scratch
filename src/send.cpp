@@ -1,8 +1,10 @@
-#include <chrono>
 #include <iostream>
+#include <sstream>
 #include <unordered_map>
 
 #include "http.h"
+
+#define BUFFSIZE 1024
 
 static std::unordered_map<std::string, struct addrinfo> ip_map;
 
@@ -64,19 +66,43 @@ namespace http {
     return remote_socketfd;
   }
 
-  std::expected<Response, Error> send(Method method, const RequestOpts &req) {
-    auto start = std::chrono::system_clock::now();
+  std::expected<Response, Error> sendreq(Method method, const RequestOpts &req) {
     auto maybe_socketfd = connect_to(req.domain_name, req.port);
-    auto end = std::chrono::system_clock::now();
-
-    std::chrono::duration<double> elapsed_seconds = end - start;
-    std::cout << "elapsed time: " << elapsed_seconds.count() << "s\t";
 
     if (!maybe_socketfd.has_value()) {
       return ERR(maybe_socketfd.error());
     }
 
-    std::cout << "All good" << std::endl;
+    std::stringstream ss;
+    ss << method << " " << req.query << " HTTP/" << (int)req.http_version.major << "."
+       << (int)req.http_version.minor << NEW_LINE;
+    ss << "Host: " << req.host << NEW_LINE;
+    ss << "Accept: " << req.accept << NEW_LINE;
+
+    if (!req.body.empty()) {
+      ss << "Content-Length: " << req.body.length() << NEW_LINE << NEW_LINE << req.body;
+    } else {
+      ss << NEW_LINE;
+    }
+
+    std::string msg = ss.str();
+    std::cout << "Request:\n===================\n" << msg << "\n===================\n" << std::endl;
+    send((int)maybe_socketfd.value(), msg.c_str(), msg.size(), 0);
+
+    msg = "";
+    char buffer[BUFFSIZE] = "";
+    ssize_t bytes_read = 0;
+    while ((bytes_read = read((int)maybe_socketfd.value(), buffer, BUFFSIZE - 1)) > 0) {
+      if (bytes_read == -1) {
+	std::cerr << "\t\tError while reading!" << std::endl;
+      }
+
+      buffer[bytes_read] = '\0';
+      msg += buffer;
+    }
+
+    std::cout << "Response:\n===================\n" << msg << "\n===================" << std::endl;
+
     close(maybe_socketfd.value());
     return Response();
   }

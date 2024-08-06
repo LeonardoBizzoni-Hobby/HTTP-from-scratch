@@ -4,9 +4,16 @@
 
 namespace http {
   struct RequestOpts {
-    const std::string domain_name;
-    const uint16_t port = 80;
-    const std::string path = "/";
-    const std::string body = "";
+    uint16_t port = 80;
+    std::string domain_name;
+    std::string host = domain_name;
+    std::string query = "/";
+    std::string accept = "*/*";
+    std::string body = "";
+
+    struct {
+      uint8_t major = 1;
+      uint8_t minor = 1;
+    } http_version;
   };
-}
+}  // namespace http

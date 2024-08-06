@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ostream>
 namespace http {
   enum class Method {
     GET,
@@ -13,4 +14,6 @@ namespace http {
     PATCH,
     UPDATE,
   };
-}
+}  // namespace http
+
+std::ostream &operator<<(std::ostream &os, const http::Method &method);

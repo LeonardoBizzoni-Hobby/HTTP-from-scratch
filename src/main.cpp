@@ -3,8 +3,8 @@
 #include "http.h"
 
 int main() {
-  auto resp1 = http::send(http::Method::GET, {.domain_name = "google.com"});
-  resp1 = http::send(http::Method::GET, {.domain_name = "example.com", .port = 0});
+  auto resp1 = http::sendreq(http::Method::GET, {.domain_name = "example.com"});
+  // auto resp1 = http::sendreq(http::Method::POST, {.domain_name = "example.com", .body = "Hello, World!"});
 
   if (!resp1.has_value()) {
     switch (resp1.error()) {
