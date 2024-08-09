@@ -1,25 +1,30 @@
+#include <algorithm>
+#include <cstdint>
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
+#include <vector>
 
 #include "http.h"
+#include "request.h"
 
 #define BUFFSIZE 1024
 
 static std::unordered_map<std::string, struct addrinfo> ip_map;
 
 namespace http {
-  std::expected<int8_t, Error> connect_to(const std::string &domain_name, const uint16_t port) {
+  std::expected<int8_t, Error> connect_to(const std::string_view &domain_name,
+					  const uint16_t port) {
     struct addrinfo hints = {0}, *addr_list;
     hints.ai_family = AF_UNSPEC;      // Either IPv4 or IPv6
     hints.ai_socktype = SOCK_STREAM;  // TCP only
 
-    if (getaddrinfo(domain_name.c_str(), std::to_string(port).c_str(), &hints, &addr_list)) {
+    if (getaddrinfo(domain_name.data(), std::to_string(port).c_str(), &hints, &addr_list)) {
       return ERR(Error::DNSResolution);
     }
 
     int8_t remote_socketfd;
-    if (auto it = ip_map.find(domain_name); it != ip_map.end()) {
+    if (auto it = ip_map.find(domain_name.data()); it != ip_map.end()) {
       remote_socketfd =
 	  socket(it->second.ai_family, it->second.ai_socktype, it->second.ai_protocol);
       if (remote_socketfd < 0) {
@@ -59,7 +64,7 @@ namespace http {
 	return ERR(Error::ServerNotFound);
       }
 
-      ip_map[domain_name] = *remote;
+      ip_map[domain_name.data()] = *remote;
       freeaddrinfo(addr_list);
     }
 
@@ -73,9 +78,22 @@ namespace http {
       return ERR(maybe_socketfd.error());
     }
 
+    std::string msg = build_request(method, req);
+    send((int)maybe_socketfd.value(), msg.c_str(), msg.size(), 0);
+
+    auto maybe_response = read_raw_response(maybe_socketfd.value());
+    if (!maybe_response.has_value()) {
+      return ERR(maybe_response.error());
+    }
+
+    close(maybe_socketfd.value());
+    return Response::build(maybe_response.value());
+  }
+
+  std::string build_request(Method method, const RequestOpts &req) {
     std::stringstream ss;
-    ss << method << " " << req.query << " HTTP/" << (int)req.http_version.major << "."
-       << (int)req.http_version.minor << NEW_LINE;
+    ss << method << " " << req.query << " HTTP/" << (int)req.version.major << "."
+       << (int)req.version.minor << NEW_LINE;
     ss << "Host: " << req.host << NEW_LINE;
     ss << "Accept: " << req.accept << NEW_LINE;
 
@@ -85,25 +103,23 @@ namespace http {
       ss << NEW_LINE;
     }
 
-    std::string msg = ss.str();
-    std::cout << "Request:\n===================\n" << msg << "\n===================\n" << std::endl;
-    send((int)maybe_socketfd.value(), msg.c_str(), msg.size(), 0);
+    return ss.str();
+  }
 
-    msg = "";
+  std::expected<std::string, Error> read_raw_response(const int8_t socketfd) {
+    std::stringstream ss;
     char buffer[BUFFSIZE] = "";
     ssize_t bytes_read = 0;
-    while ((bytes_read = read((int)maybe_socketfd.value(), buffer, BUFFSIZE - 1)) > 0) {
+
+    while ((bytes_read = read((int)socketfd, buffer, BUFFSIZE - 1)) > 0) {
       if (bytes_read == -1) {
-	std::cerr << "\t\tError while reading!" << std::endl;
+	return ERR(Error::InvalidRead);
       }
 
       buffer[bytes_read] = '\0';
-      msg += buffer;
+      ss << buffer;
     }
 
-    std::cout << "Response:\n===================\n" << msg << "\n===================" << std::endl;
-
-    close(maybe_socketfd.value());
-    return Response();
+    return ss.str();
   }
 }  // namespace http

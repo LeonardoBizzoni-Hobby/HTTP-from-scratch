@@ -1,19 +1,22 @@
 #pragma once
 
-#include "http.h"
+#include <cstdint>
+#include <string_view>
 
 namespace http {
+  struct http_version{
+    uint8_t major = 1;
+    uint8_t minor = 1;
+  };
+
   struct RequestOpts {
     uint16_t port = 80;
-    std::string domain_name;
-    std::string host = domain_name;
-    std::string query = "/";
-    std::string accept = "*/*";
-    std::string body = "";
+    std::string_view domain_name;
+    std::string_view host = domain_name;
+    std::string_view query = "/";
+    std::string_view accept = "*/*";
+    std::string_view body = "";
 
-    struct {
-      uint8_t major = 1;
-      uint8_t minor = 1;
-    } http_version;
+    http_version version;
   };
 }  // namespace http

@@ -20,6 +20,11 @@ int main() {
       case http::Error::ServerNotFound: {
 	std::cout << "Server not found" << std::endl;
       } break;
+      case http::Error::InvalidRead: {
+	std::cout << "Invalid read" << std::endl;
+      } break;
     }
+  } else {
+    std::cout << resp1.value() << std::endl;
   }
 }

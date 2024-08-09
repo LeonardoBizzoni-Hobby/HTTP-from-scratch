@@ -6,5 +6,6 @@ namespace http {
     SocketConnection,
     DNSResolution,
     ServerNotFound,
+    InvalidRead,
   };
 }
