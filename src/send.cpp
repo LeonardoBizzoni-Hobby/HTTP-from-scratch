@@ -74,7 +74,7 @@ namespace http {
     return remote_socketfd;
   }
 
-  std::expected<Response, Error> send(Method method, const RequestOpts &req) {
+  std::expected<Response, Error> send(Method method, const Request &req) {
     auto maybe_socketfd = connect(req.domain_name, req.port);
 
     if (!maybe_socketfd.has_value()) {
@@ -93,7 +93,7 @@ namespace http {
     return Response::build(maybe_response.value());
   }
 
-  std::string build_request(Method method, const RequestOpts &req) {
+  std::string build_request(Method method, const Request &req) {
     std::stringstream ss;
     ss << method << " " << req.query << " HTTP/" << (int)req.version.major << "."
        << (int)req.version.minor << NEW_LINE;
@@ -127,7 +127,7 @@ namespace http {
   }
 
   namespace async {
-    std::future<std::expected<Response, Error>> send(Method method, const RequestOpts &req) {
+    std::future<std::expected<Response, Error>> send(Method method, const Request &req) {
       return std::async(::http::send, method, req);
     }
   }  // namespace async

@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string_view>
+#include <ostream>
 
 namespace http {
   struct http_version {
@@ -9,7 +10,7 @@ namespace http {
     uint8_t minor = 1;
   };
 
-  struct RequestOpts {
+  struct Request {
     uint16_t port = 80;
     std::string_view domain_name;
     std::string_view host = domain_name;
@@ -20,3 +21,5 @@ namespace http {
     http_version version = {.major = 1, .minor = 1};
   };
 }  // namespace http
+
+std::ostream &operator<<(std::ostream &os, const http::Request &req);
