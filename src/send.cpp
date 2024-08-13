@@ -1,11 +1,11 @@
+#include <netdb.h>
+#include <unistd.h>
+
 #include <cstdint>
 #include <expected>
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
-
-#include <netdb.h>
-#include <unistd.h>
 
 #include "error.h"
 #include "http.h"
@@ -17,8 +17,7 @@
 static std::unordered_map<std::string, struct addrinfo> ip_map;
 
 namespace http {
-  std::expected<int8_t, Error> connect(const std::string_view &domain_name,
-					  const uint16_t port) {
+  std::expected<int8_t, Error> connect(const std::string_view &domain_name, const uint16_t port) {
     struct addrinfo hints = {}, *addr_list;
     hints.ai_family = AF_UNSPEC;      // Either IPv4 or IPv6
     hints.ai_socktype = SOCK_STREAM;  // TCP only
@@ -94,12 +93,6 @@ namespace http {
     return Response::build(maybe_response.value());
   }
 
-  namespace async {
-    std::future<std::expected<Response, Error>> send(Method method, const RequestOpts &req) {
-      return std::async(::http::send, method, req);
-    }
-  }
-
   std::string build_request(Method method, const RequestOpts &req) {
     std::stringstream ss;
     ss << method << " " << req.query << " HTTP/" << (int)req.version.major << "."
@@ -132,4 +125,10 @@ namespace http {
 
     return ss.str();
   }
+
+  namespace async {
+    std::future<std::expected<Response, Error>> send(Method method, const RequestOpts &req) {
+      return std::async(::http::send, method, req);
+    }
+  }  // namespace async
 }  // namespace http
