@@ -1,19 +1,23 @@
-#include <algorithm>
 #include <cstdint>
+#include <expected>
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
-#include <vector>
 
+#include <netdb.h>
+#include <unistd.h>
+
+#include "error.h"
 #include "http.h"
 #include "request.h"
+#include "response.h"
 
 #define BUFFSIZE 1024
 
 static std::unordered_map<std::string, struct addrinfo> ip_map;
 
 namespace http {
-  std::expected<int8_t, Error> connect_to(const std::string_view &domain_name,
+  std::expected<int8_t, Error> connect(const std::string_view &domain_name,
 					  const uint16_t port) {
     struct addrinfo hints = {}, *addr_list;
     hints.ai_family = AF_UNSPEC;      // Either IPv4 or IPv6
@@ -72,7 +76,7 @@ namespace http {
   }
 
   std::expected<Response, Error> send(Method method, const RequestOpts &req) {
-    auto maybe_socketfd = connect_to(req.domain_name, req.port);
+    auto maybe_socketfd = connect(req.domain_name, req.port);
 
     if (!maybe_socketfd.has_value()) {
       return ERR(maybe_socketfd.error());
@@ -88,6 +92,12 @@ namespace http {
 
     close(maybe_socketfd.value());
     return Response::build(maybe_response.value());
+  }
+
+  namespace async {
+    std::future<std::expected<Response, Error>> send(Method method, const RequestOpts &req) {
+      return std::async(::http::send, method, req);
+    }
   }
 
   std::string build_request(Method method, const RequestOpts &req) {
