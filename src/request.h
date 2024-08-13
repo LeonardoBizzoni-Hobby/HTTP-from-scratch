@@ -4,7 +4,7 @@
 #include <string_view>
 
 namespace http {
-  struct http_version{
+  struct http_version {
     uint8_t major = 1;
     uint8_t minor = 1;
   };
@@ -17,6 +17,6 @@ namespace http {
     std::string_view accept = "*/*";
     std::string_view body = "";
 
-    http_version version;
+    http_version version = {.major = 1, .minor = 1};
   };
 }  // namespace http

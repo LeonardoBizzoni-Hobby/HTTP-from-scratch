@@ -23,6 +23,7 @@ add_executable(${PROJECT_NAME} ${SRC})
 
 target_sources(${PROJECT_NAME} PRIVATE ${PLATFORM_SRC})
 target_compile_definitions(${PROJECT_NAME} PRIVATE ROOTDIR="${CMAKE_SOURCE_DIR}")
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 # Set output directories
 set_target_properties(${PROJECT_NAME} PROPERTIES

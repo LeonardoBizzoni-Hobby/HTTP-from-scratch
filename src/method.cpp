@@ -1,5 +1,7 @@
 #include "method.h"
 
+#include <utility>
+
 std::ostream &operator<<(std::ostream &os, const http::Method &method) {
   using namespace http;
 
@@ -34,5 +36,7 @@ std::ostream &operator<<(std::ostream &os, const http::Method &method) {
     case Method::UPDATE: {
       return os << "UPDATE";
     } break;
+    default:
+      std::unreachable();
   }
 }

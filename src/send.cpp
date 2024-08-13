@@ -15,7 +15,7 @@ static std::unordered_map<std::string, struct addrinfo> ip_map;
 namespace http {
   std::expected<int8_t, Error> connect_to(const std::string_view &domain_name,
 					  const uint16_t port) {
-    struct addrinfo hints = {0}, *addr_list;
+    struct addrinfo hints = {}, *addr_list;
     hints.ai_family = AF_UNSPEC;      // Either IPv4 or IPv6
     hints.ai_socktype = SOCK_STREAM;  // TCP only
 
@@ -71,7 +71,7 @@ namespace http {
     return remote_socketfd;
   }
 
-  std::expected<Response, Error> sendreq(Method method, const RequestOpts &req) {
+  std::expected<Response, Error> send(Method method, const RequestOpts &req) {
     auto maybe_socketfd = connect_to(req.domain_name, req.port);
 
     if (!maybe_socketfd.has_value()) {
@@ -79,7 +79,7 @@ namespace http {
     }
 
     std::string msg = build_request(method, req);
-    send((int)maybe_socketfd.value(), msg.c_str(), msg.size(), 0);
+    ::send((int)maybe_socketfd.value(), msg.c_str(), msg.size(), 0);
 
     auto maybe_response = read_raw_response(maybe_socketfd.value());
     if (!maybe_response.has_value()) {

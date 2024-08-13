@@ -68,7 +68,7 @@ std::ostream &operator<<(std::ostream &os, const http::Response &resp) {
   os << "HTTP version: " << (int)resp.version.major << "." << (int)resp.version.minor << "\n";
   os << "Status: " << resp.status;
 
-  for (const auto entry : resp.fields) {
+  for (const auto &entry : resp.fields) {
     os << "\n" << entry.first << ": " << entry.second;
   }
 

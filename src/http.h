@@ -19,7 +19,7 @@
 #define NEW_LINE std::string_view("\r\n")
 
 namespace http {
-  std::expected<Response, Error> sendreq(Method, const RequestOpts& req);
+  std::expected<Response, Error> send(Method, const RequestOpts& req);
 
   std::expected<int8_t, Error> connect_to(const std::string_view& domain_name, const uint16_t port = 80);
 
