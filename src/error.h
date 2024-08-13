@@ -7,5 +7,8 @@ namespace http {
     DNSResolution,
     ServerNotFound,
     InvalidRead,
+    InvalidResponse,
+    InvalidResponseHTTPVersion,
+    InvalidResponseStatusCode,
   };
 }

@@ -1,11 +1,16 @@
 #include <iostream>
 #include <ranges>
 #include <string_view>
+#include <utility>
 
 #include "http.h"
 
 namespace http {
   std::expected<Response, Error> Response::build(std::string_view raw_response) noexcept {
+    if (raw_response.empty()) {
+      return ERR(Error::InvalidResponse);
+    }
+
     Response resp;
 
     auto lines_view = raw_response | std::views::split(NEW_LINE);
@@ -22,14 +27,14 @@ namespace http {
       resp.version = {.major = (uint8_t)std::stoi(major.data()),
 		      .minor = (uint8_t)std::stoi(minor.data())};
     } catch (...) {
-      resp.version = {.major = 0, .minor = 0};
+      return ERR(Error::InvalidResponseHTTPVersion);
     }
 
     try {
       std::string_view status(*++word_iter);
       resp.status = status_map[std::stoi(status.data())];
     } catch (...) {
-      resp.status = Status::PARSE_ERROR;
+      return ERR(Error::InvalidResponseStatusCode);
     }
 
     for (std::string_view line; lines_view_iter != lines_view.end() &&
@@ -55,8 +60,6 @@ std::ostream &operator<<(std::ostream &os, const http::Status &status) {
   using namespace http;
 
   switch (status) {
-    case Status::PARSE_ERROR:
-      return os << (uint16_t)status << " - Parse Error";
     case Status::CONTINUE:
       return os << (uint16_t)status << " - Continue";
     case Status::SWITCHING_PROTOCOLS:
@@ -181,9 +184,8 @@ std::ostream &operator<<(std::ostream &os, const http::Status &status) {
       return os << (uint16_t)status << " - Not Extended";
     case Status::NETWORK_AUTHENTICATION_REQUIRED:
       return os << (uint16_t)status << " - Network Authentication Required";
-
     default:
-      return os << (uint16_t)status << " - Unknown Status";
+      std::unreachable();
   }
 }
 

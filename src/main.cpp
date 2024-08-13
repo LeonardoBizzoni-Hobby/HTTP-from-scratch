@@ -1,13 +1,10 @@
-#include <unistd.h>
-
 #include <iostream>
 
 #include "http.h"
-#include "request.h"
 
 int main() {
-  auto resp1 = http::async::send(http::Method::GET,
-				 http::RequestOpts{.domain_name = "google.com", .query = "/prova"});
+  auto resp1 = http::async::send(http::Method::GET, {.domain_name = "example.com",
+						     .version = {1, 1}});
 
   auto resp = resp1.get();
   if (!resp.has_value()) {
@@ -26,6 +23,15 @@ int main() {
       } break;
       case http::Error::InvalidRead: {
 	std::cout << "Invalid read" << std::endl;
+      } break;
+      case http::Error::InvalidResponse: {
+	std::cout << "Invalid response" << std::endl;
+      } break;
+      case http::Error::InvalidResponseHTTPVersion: {
+	std::cout << "Invalid response http version" << std::endl;
+      } break;
+      case http::Error::InvalidResponseStatusCode: {
+	std::cout << "Invalid response status code" << std::endl;
       } break;
     }
   } else {
