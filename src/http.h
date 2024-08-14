@@ -17,7 +17,7 @@ namespace http {
   std::expected<int8_t, Error> connect(const std::string_view& domain_name, const uint16_t port = 80);
 
   std::string build_request(Method method, const Request &req);
-  std::expected<std::string, Error> read_raw_response(const int8_t socketfd);
+  std::expected<std::string, Error> read_raw_message(const uint8_t socketfd);
 
   namespace async {
     std::future<std::expected<Response, Error>> send(Method method, const Request &req);

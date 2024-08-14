@@ -1,5 +1,7 @@
 #pragma once
 
+#include <netinet/in.h>
+
 #include <cstdint>
 #include <expected>
 #include <functional>
@@ -14,16 +16,28 @@ namespace http {
   public:
     ~Listener() {}
 
-    static std::expected<Listener, Error> create_on_local(uint16_t port);
-    static std::expected<Listener, Error> create_on_lan(uint16_t port);
+    static inline std::expected<Listener, Error> on_local(uint16_t port, uint16_t backlog = 4096) {
+      return on(port, INADDR_LOOPBACK, backlog);
+    }
 
-    void serve();
-    void serve_async();
+    static inline std::expected<Listener, Error> on_LAN(uint16_t port, uint16_t backlog = 4096) {
+      return on(port, INADDR_ANY, backlog);
+    }
+
+    std::expected<void, Error> serve();
+    std::expected<void, Error> serve_async();
 
   private:
-    Listener() : routes({}) {}
+    Listener();
+
+    static std::expected<Listener, Error> on(uint16_t port, in_addr_t addr,
+					     uint16_t backlog = 4096);
 
   public:
     std::unordered_map<std::string, std::function<void(const Request &)>> routes;
+
+  private:
+    int8_t socketfd;
+    struct sockaddr_in addr;
   };
 }  // namespace http

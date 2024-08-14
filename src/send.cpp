@@ -2,6 +2,7 @@
 #include <unistd.h>
 
 #include <cstdint>
+#include <cstring>
 #include <expected>
 #include <iostream>
 #include <sstream>
@@ -84,7 +85,7 @@ namespace http {
     std::string msg = build_request(method, req);
     ::send((int)maybe_socketfd.value(), msg.c_str(), msg.size(), 0);
 
-    auto maybe_response = read_raw_response(maybe_socketfd.value());
+    auto maybe_response = read_raw_message(maybe_socketfd.value());
     if (!maybe_response.has_value()) {
       return ERR(maybe_response.error());
     }
@@ -109,18 +110,19 @@ namespace http {
     return ss.str();
   }
 
-  std::expected<std::string, Error> read_raw_response(const int8_t socketfd) {
+  std::expected<std::string, Error> read_raw_message(const uint8_t socketfd) {
     std::stringstream ss;
     char buffer[BUFFSIZE] = "";
     ssize_t bytes_read = 0;
 
     while ((bytes_read = read((int)socketfd, buffer, BUFFSIZE - 1)) > 0) {
-      if (bytes_read == -1) {
-	return ERR(Error::InvalidRead);
-      }
-
       buffer[bytes_read] = '\0';
       ss << buffer;
+
+      if (buffer[bytes_read - 2] == '\r' && buffer[bytes_read - 1] == '\n') {
+	break;
+      }
+      ::memset(buffer, 0, BUFFSIZE * sizeof(char));
     }
 
     return ss.str();
