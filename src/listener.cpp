@@ -6,6 +6,7 @@
 
 #include <cstdio>
 #include <sstream>
+#include <thread>
 
 #include "const_definitions.h"
 #include "error.h"
@@ -47,25 +48,27 @@ namespace http {
 	continue;
       }
 
-      Response resp;
-      auto raw_req = read_raw_message(clientfd);
-      if (raw_req.has_value()) {
-	auto maybe_req = Request::build(raw_req.value());
+      std::thread([&]() {
+	Response resp;
+	auto raw_req = read_raw_message(clientfd);
+	if (raw_req.has_value()) {
+	  auto maybe_req = Request::build(raw_req.value());
 
-	if (maybe_req.has_value()) {
-	  try {
-	    std::stringstream ss;
-	    ss << maybe_req.value().method << " " << maybe_req.value().path;
-	    resp = this->routes.at(ss.str())(maybe_req.value());
-	  } catch (...) {
+	  if (maybe_req.has_value()) {
+	    try {
+	      std::stringstream ss;
+	      ss << maybe_req.value().method << " " << maybe_req.value().path;
+	      resp = this->routes.at(ss.str())(maybe_req.value());
+	    } catch (...) {
+	    }
 	  }
 	}
-      }
 
-      // Send `resp` to client
+	// Send `resp` to client
 
-      ::shutdown(clientfd, SHUT_RDWR);
-      ::close(clientfd);
+	::shutdown(clientfd, SHUT_RDWR);
+	::close(clientfd);
+      }).detach();
     }
 
     return {};
