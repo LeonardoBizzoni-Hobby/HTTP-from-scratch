@@ -18,8 +18,9 @@ namespace http {
   public:
     uint16_t port = 80;
     std::string_view domain_name;
-    std::string query = "/";
-    std::string body = "";
+    std::string path = "/";
+    std::string query;
+    std::string body;
 
     Method method;
     http_version version = {.major = 1, .minor = 1};

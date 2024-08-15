@@ -12,8 +12,9 @@
 
 std::ostream &operator<<(std::ostream &os, const http::Request &req) {
   os << "Request { domain: " << std::quoted(req.domain_name) << ", port: " << req.port
-     << ", query: " << std::quoted(req.query) << ", method: " << req.method
-     << ", version: " << (int)req.version.major << "." << (int)req.version.minor << ", headers: [ ";
+     << ", path: " << std::quoted(req.path) << ", query: " << std::quoted(req.query)
+     << ", method: " << req.method << ", version: " << (int)req.version.major << "."
+     << (int)req.version.minor << ", headers: [ ";
 
   for (const auto &header : req.optheaders) {
     os << header.first << " = " << header.second << ",";
@@ -49,11 +50,15 @@ namespace http {
     }
 
     std::string_view query(*word_iter++);
-    std::cout << "\t" << query << std::endl;
     if (query.empty() || !query.starts_with('/')) {
       return Err(Error::InvalidQueryRequest);
     } else {
-      req.query = query;
+      auto query_view = query | std::views::split('?');
+      auto query_view_iter = query_view.begin();
+
+      req.path = std::string((*query_view_iter).begin(), (*query_view_iter).end());
+      query_view_iter++;
+      req.query = std::string((*query_view_iter).begin(), (*query_view_iter).end());
     }
 
     std::string_view version(*word_iter);

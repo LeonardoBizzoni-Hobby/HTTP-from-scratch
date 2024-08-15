@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include <cstdio>
+#include <sstream>
 
 #include "const_definitions.h"
 #include "error.h"
@@ -53,7 +54,9 @@ namespace http {
 
 	if (maybe_req.has_value()) {
 	  try {
-	    resp = this->routes.at(maybe_req.value().query)(maybe_req.value());
+	    std::stringstream ss;
+	    ss << maybe_req.value().method << " " << maybe_req.value().path;
+	    resp = this->routes.at(ss.str())(maybe_req.value());
 	  } catch (...) {
 	  }
 	}
