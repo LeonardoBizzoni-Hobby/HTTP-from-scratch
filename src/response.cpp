@@ -8,7 +8,7 @@
 namespace http {
   std::expected<Response, Error> Response::build(std::string_view raw_response) noexcept {
     if (raw_response.empty()) {
-      return ERR(Error::InvalidResponse);
+      return Err(Error::InvalidResponse);
     }
 
     Response resp;
@@ -27,14 +27,14 @@ namespace http {
       resp.version = {.major = (uint8_t)std::stoi(major.data()),
 		      .minor = (uint8_t)std::stoi(minor.data())};
     } catch (...) {
-      return ERR(Error::InvalidResponseHTTPVersion);
+      return Err(Error::InvalidResponseHTTPVersion);
     }
 
     try {
       std::string_view status(*++word_iter);
       resp.status = status_map[std::stoi(status.data())];
     } catch (...) {
-      return ERR(Error::InvalidResponseStatusCode);
+      return Err(Error::InvalidResponseStatusCode);
     }
 
     for (std::string_view line; lines_view_iter != lines_view.end() &&

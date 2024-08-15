@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <string_view>
 #include <ostream>
+#include <unordered_map>
 
 namespace http {
   struct http_version {
@@ -13,12 +14,12 @@ namespace http {
   struct Request {
     uint16_t port = 80;
     std::string_view domain_name;
-    std::string_view host = domain_name;
     std::string_view query = "/";
-    std::string_view accept = "*/*";
     std::string_view body = "";
 
     http_version version = {.major = 1, .minor = 1};
+
+    std::unordered_map<std::string, std::string> optheaders = {};
   };
 }  // namespace http
 

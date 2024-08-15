@@ -24,7 +24,7 @@ namespace http {
     hints.ai_socktype = SOCK_STREAM;  // TCP only
 
     if (getaddrinfo(domain_name.data(), std::to_string(port).c_str(), &hints, &addr_list)) {
-      return ERR(Error::DNSResolution);
+      return Err(Error::DNSResolution);
     }
 
     int8_t remote_socketfd;
@@ -33,7 +33,7 @@ namespace http {
 	  socket(it->second.ai_family, it->second.ai_socktype, it->second.ai_protocol);
       if (remote_socketfd < 0) {
 	close(remote_socketfd);
-	return ERR(Error::SocketConnection);
+	return Err(Error::SocketConnection);
       }
     } else {
       struct addrinfo *remote = 0;
@@ -65,7 +65,7 @@ namespace http {
 
       if (!remote) {
 	freeaddrinfo(addr_list);
-	return ERR(Error::ServerNotFound);
+	return Err(Error::ServerNotFound);
       }
 
       ip_map[domain_name.data()] = *remote;
@@ -79,7 +79,7 @@ namespace http {
     auto maybe_socketfd = connect(req.domain_name, req.port);
 
     if (!maybe_socketfd.has_value()) {
-      return ERR(maybe_socketfd.error());
+      return Err(maybe_socketfd.error());
     }
 
     std::string msg = build_request(method, req);
@@ -87,7 +87,7 @@ namespace http {
 
     auto maybe_response = read_raw_message(maybe_socketfd.value());
     if (!maybe_response.has_value()) {
-      return ERR(maybe_response.error());
+      return Err(maybe_response.error());
     }
 
     close(maybe_socketfd.value());
@@ -98,11 +98,15 @@ namespace http {
     std::stringstream ss;
     ss << method << " " << req.query << " HTTP/" << (int)req.version.major << "."
        << (int)req.version.minor << NEW_LINE;
-    ss << "Host: " << req.host << NEW_LINE;
-    ss << "Accept: " << req.accept << NEW_LINE;
+    ss << "Host: " << req.domain_name << NEW_LINE;
+
+    for (const auto &header : req.optheaders) {
+      ss << header.first << ": " << header.second << NEW_LINE;
+    }
 
     if (!req.body.empty()) {
-      ss << "Content-Length: " << req.body.length() << NEW_LINE << NEW_LINE << req.body;
+      ss << "Content-Length: " << req.body.length() * sizeof(char) << NEW_LINE << NEW_LINE
+	 << req.body;
     } else {
       ss << NEW_LINE;
     }

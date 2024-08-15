@@ -4,7 +4,5 @@
 
 std::ostream &operator<<(std::ostream &os, const http::Request &req) {
   return os << "Request { domain: " << std::quoted(req.domain_name) << ", port: " << req.port
-	    << ", host: " << std::quoted(req.host) << ", query: " << std::quoted(req.query)
-	    << ", accept: " << std::quoted(req.accept) << ", body: " << std::quoted(req.body)
-	    << " }";
+	    << ", query: " << std::quoted(req.query) << ", body: " << std::quoted(req.body) << " }";
 }
