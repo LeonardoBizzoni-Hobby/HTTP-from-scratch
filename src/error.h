@@ -8,9 +8,12 @@ namespace http {
     SocketConnection,
     DNSResolution,
     ServerNotFound,
-    InvalidRead,
     InvalidResponse,
-    InvalidResponseHTTPVersion,
+    InvalidRequest,
+    InvalidRequestMethod,
+    InvalidRequestPath,
+    InvalidQueryRequest,
+    InvalidHTTPVersion,
     InvalidResponseStatusCode,
   };
 }

@@ -10,6 +10,7 @@
 
 #include "error.h"
 #include "request.h"
+#include "response.h"
 
 namespace http {
   struct Listener {
@@ -34,7 +35,7 @@ namespace http {
 					     uint16_t backlog = 4096);
 
   public:
-    std::unordered_map<std::string, std::function<void(const Request &)>> routes;
+    std::unordered_map<std::string, std::function<Response(const Request &)>> routes;
 
   private:
     int8_t socketfd;

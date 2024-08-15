@@ -1,22 +1,27 @@
 #pragma once
 
 #include <cstdint>
-#include <string_view>
+#include <expected>
 #include <ostream>
+#include <string_view>
 #include <unordered_map>
 
-namespace http {
-  struct http_version {
-    uint8_t major = 1;
-    uint8_t minor = 1;
-  };
+#include "error.h"
+#include "http_version.h"
+#include "method.h"
 
+namespace http {
   struct Request {
+  public:
+    static std::expected<Request, Error> build(std::string_view raw_response) noexcept;
+
+  public:
     uint16_t port = 80;
     std::string_view domain_name;
-    std::string_view query = "/";
-    std::string_view body = "";
+    std::string query = "/";
+    std::string body = "";
 
+    Method method;
     http_version version = {.major = 1, .minor = 1};
 
     std::unordered_map<std::string, std::string> optheaders = {};

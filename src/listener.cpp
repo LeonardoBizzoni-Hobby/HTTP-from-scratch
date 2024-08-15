@@ -5,8 +5,8 @@
 #include <unistd.h>
 
 #include <cstdio>
-#include <iostream>
 
+#include "const_definitions.h"
 #include "error.h"
 #include "http.h"
 
@@ -39,18 +39,32 @@ namespace http {
 
   std::expected<void, Error> Listener::serve() {
     socklen_t addrsize = sizeof(this->addr);
-    int8_t clientfd = ::accept(this->socketfd, (struct sockaddr *)&this->addr, &addrsize);
-    if (clientfd < 0) {
-      return Err(Error::SocketConnection);
+
+    while (true) {
+      int8_t clientfd = ::accept(this->socketfd, (struct sockaddr *)&this->addr, &addrsize);
+      if (clientfd < 0) {
+	continue;
+      }
+
+      Response resp;
+      auto raw_req = read_raw_message(clientfd);
+      if (raw_req.has_value()) {
+	auto maybe_req = Request::build(raw_req.value());
+
+	if (maybe_req.has_value()) {
+	  try {
+	    resp = this->routes.at(maybe_req.value().query)(maybe_req.value());
+	  } catch (...) {
+	  }
+	}
+      }
+
+      // Send `resp` to client
+
+      ::shutdown(clientfd, SHUT_RDWR);
+      ::close(clientfd);
     }
 
-    auto raw_req = read_raw_message(clientfd);
-    if (raw_req.has_value()) {
-      std::cout << raw_req.value() << std::endl;
-    }
-
-    ::shutdown(clientfd, SHUT_RDWR);
-    ::close(clientfd);
     return {};
   }
 }  // namespace http

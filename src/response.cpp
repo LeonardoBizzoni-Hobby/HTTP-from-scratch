@@ -1,9 +1,8 @@
+#include "response.h"
+#include <expected>
 #include <iostream>
 #include <ranges>
-#include <string_view>
 #include <utility>
-
-#include "http.h"
 
 namespace http {
   std::expected<Response, Error> Response::build(std::string_view raw_response) noexcept {
@@ -27,12 +26,12 @@ namespace http {
       resp.version = {.major = (uint8_t)std::stoi(major.data()),
 		      .minor = (uint8_t)std::stoi(minor.data())};
     } catch (...) {
-      return Err(Error::InvalidResponseHTTPVersion);
+      return Err(Error::InvalidHTTPVersion);
     }
 
     try {
       std::string_view status(*++word_iter);
-      resp.status = status_map[std::stoi(status.data())];
+      resp.status = status_map.at(std::stoi(status.data()));
     } catch (...) {
       return Err(Error::InvalidResponseStatusCode);
     }
