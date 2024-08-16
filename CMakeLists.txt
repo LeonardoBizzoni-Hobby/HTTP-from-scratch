@@ -16,14 +16,13 @@ set(CMAKE_ARCHITE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Set output directories
-set(OUTPUT_DIR "${PROJECT_SOURCE_DIR}/bin/${CMAKE_BUILD_TYPE}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+# set(OUTPUT_DIR "${PROJECT_SOURCE_DIR}/bin/${CMAKE_BUILD_TYPE}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
 
 file(GLOB SRC "src/*.cpp" "src/*.hpp" "src/*.h")
-add_executable(${PROJECT_NAME} ${SRC})
+add_library(${PROJECT_NAME} ${SRC})
 
 target_sources(${PROJECT_NAME} PRIVATE ${PLATFORM_SRC})
 target_compile_definitions(${PROJECT_NAME} PRIVATE ROOTDIR="${CMAKE_SOURCE_DIR}")
-target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 # Set output directories
 set_target_properties(${PROJECT_NAME} PROPERTIES

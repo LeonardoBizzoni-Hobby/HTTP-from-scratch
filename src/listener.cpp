@@ -64,7 +64,7 @@ namespace http {
 	  }
 	}
 
-	// Send `resp` to client
+	resp.send(clientfd);
 
 	::shutdown(clientfd, SHUT_RDWR);
 	::close(clientfd);

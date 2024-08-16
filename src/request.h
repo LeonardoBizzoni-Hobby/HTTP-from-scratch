@@ -7,7 +7,7 @@
 #include <unordered_map>
 
 #include "error.h"
-#include "http_version.h"
+#include "const_definitions.h"
 #include "method.h"
 
 namespace http {

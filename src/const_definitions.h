@@ -142,4 +142,9 @@ namespace http {
       {510, Status::NOT_EXTENDED},
       {511, Status::NETWORK_AUTHENTICATION_REQUIRED},
   };
-}
+
+  struct http_version {
+    uint8_t major = 1;
+    uint8_t minor = 1;
+  };
+}  // namespace http

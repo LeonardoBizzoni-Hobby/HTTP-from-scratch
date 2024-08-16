@@ -5,7 +5,6 @@
 
 #include "const_definitions.h"
 #include "error.h"
-#include "http_version.h"
 
 namespace http {
   struct Response {
@@ -15,10 +14,12 @@ namespace http {
     std::unordered_map<std::string, std::string> fields;
 
   public:
-    Response() : version({1,1}), status(Status::NOT_ACCEPTABLE) {}
+    Response() : version({1,1}), status(Status::NOT_FOUND) {}
     ~Response() {}
 
     static std::expected<Response, Error> build(std::string_view raw_response) noexcept;
+
+    void send(uint8_t sockfd);
   };
 }  // namespace http
 
