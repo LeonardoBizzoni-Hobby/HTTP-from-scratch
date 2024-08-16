@@ -26,6 +26,7 @@ namespace http {
     http_version version = {.major = 1, .minor = 1};
 
     std::unordered_map<std::string, std::string> optheaders = {};
+    std::unordered_map<std::string, std::string> parameters = {};
   };
 }  // namespace http
 

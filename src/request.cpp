@@ -20,6 +20,12 @@ std::ostream &operator<<(std::ostream &os, const http::Request &req) {
     os << header.first << " = " << header.second << ",";
   }
 
+  os << " ], parameters: [";
+
+  for (const auto &parameter : req.parameters) {
+    os << parameter.first << " = " << parameter.second << ",";
+  }
+
   os << " ] }";
   return os;
 }
@@ -58,7 +64,24 @@ namespace http {
 
       req.path = std::string((*query_view_iter).begin(), (*query_view_iter).end());
       query_view_iter++;
-      req.query = std::string((*query_view_iter).begin(), (*query_view_iter).end());
+
+      auto query_param_view =
+	  std::string_view((*query_view_iter).begin(), (*query_view_iter).end()) |
+	  std::views::split(';');
+
+      auto query_param_view_iter = query_param_view.begin();
+      while (query_param_view_iter != query_param_view.end()) {
+	auto param_view =
+	    std::string_view((*query_param_view_iter).begin(), (*query_param_view_iter).end()) |
+	    std::views::split('=');
+	auto param_view_iter = param_view.begin();
+
+	auto param_name = std::string((*param_view_iter).begin(), (*param_view_iter).end());
+	param_view_iter++;
+	req.parameters[std::move(param_name)] = std::string((*param_view_iter).begin(), (*param_view_iter).end());
+
+	++query_param_view_iter;
+      }
     }
 
     std::string_view version(*word_iter);
