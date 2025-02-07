@@ -1,0 +1,21 @@
+* Example
+#+begin_src cpp :tangle src/main.cpp
+#include <iostream>
+#include "http.h"
+
+int main() {
+  auto server = http::Listener::on_local(8800);
+
+  server.value().routes["GET /"] = [](const http::Request &req) -> http::Response {
+    std::cout << req << std::endl;
+
+    http::Response resp;
+    resp.status = http::Status::OK;
+    resp.body = "<h1>Hello, World!</h1>";
+
+    return resp;
+  };
+
+  server.value().serve();
+}
+#+end_src
